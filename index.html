@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>SECTOR-7 // 密室逃脫</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+:root{--g:#00ff41;--gd:#00aa2a;--r:#ff2244;--c:#00ffff;--y:#ffd700;--bg:#000a00;--panel:rgba(0,26,0,0.93)}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);font-family:'Share Tech Mono',monospace;color:var(--g);height:100%;overflow:hidden;touch-action:manipulation}
+#mc{position:fixed;inset:0;z-index:0;opacity:.5}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:200}
+
+/* stages */
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;transition:opacity .5s;overflow-y:auto;padding:10px 0}
+.stage.hidden{opacity:0;pointer-events:none}
+
+/* panel */
+.panel{background:var(--panel);border:1px solid var(--gd);box-shadow:0 0 0 1px #001800,0 0 24px rgba(0,255,65,.18),inset 0 0 28px rgba(0,255,65,.04);padding:20px 18px 22px;width:min(430px,96vw);position:relative;backdrop-filter:blur(6px);margin:auto}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--g),transparent);animation:scanTop 3s linear infinite}
+@keyframes scanTop{0%{transform:scaleX(0);transform-origin:left}50%{transform:scaleX(1);transform-origin:left}50.001%{transform:scaleX(1);transform-origin:right}100%{transform:scaleX(0);transform-origin:right}}
+.panel::after{content:'';position:absolute;bottom:0;right:0;width:14px;height:14px;border-right:2px solid var(--g);border-bottom:2px solid var(--g)}
+.ctl{position:absolute;top:0;left:0;width:14px;height:14px;border-left:2px solid var(--g);border-top:2px solid var(--g)}
+
+/* header */
+.stag{font-family:'Orbitron',sans-serif;font-size:clamp(7px,1.8vw,9px);letter-spacing:4px;color:var(--gd);margin-bottom:4px}
+.ttl{font-family:'Orbitron',sans-serif;font-size:clamp(15px,4.5vw,22px);font-weight:900;letter-spacing:3px;color:var(--g);text-shadow:0 0 18px var(--g),0 0 36px rgba(0,255,65,.4);margin-bottom:3px}
+.sub{font-size:clamp(8px,2vw,10px);color:var(--gd);letter-spacing:1px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(0,255,65,.15)}
+
+/* progress */
+.pbw{margin-bottom:10px;height:2px;background:rgba(0,255,65,.1);position:relative}
+.pbf{height:100%;background:var(--g);box-shadow:0 0 6px var(--g);transition:width .8s ease}
+.pbl{position:absolute;right:0;top:4px;font-size:9px;letter-spacing:2px;color:var(--gd)}
+
+/* ticker */
+.tkr{font-size:clamp(9px,2.3vw,10px);color:var(--gd);letter-spacing:1px;margin-bottom:12px;min-height:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tkr .bl{animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* door */
+.doorwrap{display:flex;gap:12px;margin-bottom:14px;align-items:center}
+.doorinfo{display:flex;flex-direction:column;gap:5px;font-size:clamp(10px,2.5vw,11px);color:var(--gd);letter-spacing:1px}
+.doorinfo .v{color:var(--g)}
+.dp-l,.dp-r{transition:transform 1.2s cubic-bezier(.77,0,.18,1)}
+.door-open .dp-l{transform:translateX(-34px)}
+.door-open .dp-r{transform:translateX(34px)}
+
+/* laser */
+.laserwrap{margin-bottom:14px;position:relative;height:62px;overflow:hidden;border:1px solid rgba(0,255,65,.2);background:rgba(0,5,0,.5)}
+.ll{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,var(--r) 20%,#ff6688 50%,var(--r) 80%,transparent 100%);box-shadow:0 0 6px var(--r),0 0 12px rgba(255,34,68,.5);animation:lp 2s ease-in-out infinite alternate}
+.ll:nth-child(1){top:22%;animation-duration:1.8s}
+.ll:nth-child(2){top:50%;animation-delay:.6s;animation-duration:2.3s}
+.ll:nth-child(3){top:78%;animation-delay:1.1s;animation-duration:1.5s}
+@keyframes lp{from{opacity:.85}to{opacity:1;box-shadow:0 0 10px var(--r),0 0 22px rgba(255,34,68,.6)}}
+.llbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:4px;color:var(--r);text-shadow:0 0 10px var(--r);animation:blink .7s step-end infinite;z-index:2;pointer-events:none;white-space:nowrap}
+
+/* morse */
+.morse-box{margin-bottom:14px;background:rgba(0,10,0,.8);border:1px solid rgba(0,255,65,.2);padding:12px}
+.bulbs{display:flex;gap:5px;align-items:center;margin-bottom:10px;flex-wrap:wrap;min-height:28px}
+.bulb{width:20px;height:20px;border-radius:50%;border:2px solid var(--gd);background:rgba(0,80,0,.3);transition:background .04s,box-shadow .04s;flex-shrink:0}
+.bulb.on{background:var(--g);box-shadow:0 0 10px var(--g),0 0 20px rgba(0,255,65,.5)}
+.msep{width:1px;height:16px;background:var(--gd);opacity:.35;flex-shrink:0;margin:0 2px}
+.mstat{font-size:9px;letter-spacing:2px;color:var(--gd);text-align:center;margin-bottom:8px;min-height:12px}
+.mctrl{display:flex;gap:8px}
+.mcbtn{flex:1;background:transparent;border:1px solid var(--gd);color:var(--g);font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1px;padding:8px 4px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.mcbtn:active,.mcbtn:hover{background:rgba(0,255,65,.1);border-color:var(--g);box-shadow:0 0 10px rgba(0,255,65,.3)}
+.mcbtn:disabled{opacity:.3;pointer-events:none}
+
+/* symbol sequence (no table) */
+.sym-seq-box{margin-bottom:14px;background:rgba(0,10,0,.8);border:1px solid rgba(0,255,65,.2);padding:14px;text-align:center}
+.sym-seq{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.sym-char{font-size:clamp(30px,9vw,40px);color:var(--g);text-shadow:0 0 12px var(--g);user-select:none}
+.sym-note{font-size:10px;color:var(--gd);letter-spacing:2px;margin-top:10px}
+
+/* qr */
+.qr-box{margin-bottom:14px;border:1px solid rgba(0,255,65,.2);background:rgba(0,8,0,.8);padding:14px}
+.qr-video-wrap{position:relative;width:100%;aspect-ratio:1;background:#000;overflow:hidden;border:1px solid rgba(0,255,65,.3);margin-bottom:10px}
+.qr-video-wrap video{width:100%;height:100%;object-fit:cover;display:block}
+.qr-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.qr-frame{width:60%;aspect-ratio:1;border:2px solid var(--g);box-shadow:0 0 10px var(--g);position:relative}
+.qr-frame::before,.qr-frame::after,.qr-corner-bl,.qr-corner-br{content:'';position:absolute;width:16px;height:16px}
+.qr-frame::before{top:-2px;left:-2px;border-top:3px solid var(--c);border-left:3px solid var(--c)}
+.qr-frame::after{top:-2px;right:-2px;border-top:3px solid var(--c);border-right:3px solid var(--c)}
+.qr-corner-bl{bottom:-2px;left:-2px;border-bottom:3px solid var(--c);border-left:3px solid var(--c)}
+.qr-corner-br{bottom:-2px;right:-2px;border-bottom:3px solid var(--c);border-right:3px solid var(--c)}
+.qr-scan-line{position:absolute;left:5%;right:5%;height:1px;background:linear-gradient(90deg,transparent,var(--g),transparent);box-shadow:0 0 6px var(--g);animation:qrscan 2s ease-in-out infinite}
+@keyframes qrscan{0%,100%{top:10%}50%{top:85%}}
+.qr-result-box{padding:10px;border:1px solid rgba(0,255,65,.2);background:rgba(0,20,0,.6);font-size:11px;letter-spacing:1px;word-break:break-all;min-height:36px;color:var(--gd)}
+.qr-result-box.got{color:var(--g);border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,.2)}
+.qr-btn{width:100%;background:transparent;border:1px solid var(--gd);color:var(--g);font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:2px;padding:11px;cursor:pointer;transition:all .2s;margin-top:8px}
+.qr-btn:not(:disabled):active,.qr-btn:not(:disabled):hover{background:rgba(0,255,65,.1);border-color:var(--g);box-shadow:0 0 12px rgba(0,255,65,.3)}
+.qr-btn:disabled{opacity:.3;cursor:default}
+
+/* star */
+.star-single{margin-bottom:14px;border:1px solid rgba(0,255,65,.2);background:rgba(0,8,0,.8);padding:10px}
+.star-title{font-size:9px;letter-spacing:3px;color:var(--gd);text-align:center;margin-bottom:6px}
+.star-svg{width:100%;display:block}
+.star-cnt{text-align:center;font-family:'Orbitron',sans-serif;font-size:10px;color:var(--gd);margin-top:4px}
+
+/* boss hint */
+.boss-hint{border:1px solid rgba(255,215,0,.25);background:rgba(20,15,0,.7);padding:12px;margin-bottom:14px;line-height:1.9}
+.bh-row{font-size:10px;color:var(--gd);letter-spacing:1px}
+.bh-row span{color:var(--y)}
+
+/* code display + numpad */
+.inlbl{font-size:clamp(9px,2.3vw,10px);letter-spacing:3px;color:var(--gd);margin-bottom:7px}
+.coddis{display:flex;gap:7px;justify-content:center;margin-bottom:10px}
+.cd{width:clamp(34px,9.5vw,46px);height:clamp(42px,11.5vw,54px);background:rgba(0,16,0,.85);border:1px solid var(--gd);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:clamp(17px,5vw,24px);font-weight:700;color:var(--g);text-shadow:0 0 10px var(--g);transition:border-color .2s,box-shadow .2s}
+.cd.active{border-color:var(--c);box-shadow:0 0 10px rgba(0,255,255,.4);animation:cblink .8s step-end infinite}
+@keyframes cblink{0%,100%{border-color:var(--c)}50%{border-color:rgba(0,255,255,.2)}}
+.cd.filled{border-color:var(--g);box-shadow:0 0 8px rgba(0,255,65,.3)}
+.cd.err{border-color:var(--r)!important;box-shadow:0 0 10px rgba(255,34,68,.5)!important;animation:shake .4s ease!important}
+.cd.ok{border-color:var(--c)!important;box-shadow:0 0 14px rgba(0,255,255,.5)!important}
+.cdot{width:9px;height:9px;background:var(--g);border-radius:50%;box-shadow:0 0 6px var(--g)}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(5px,1.8vw,9px);margin-bottom:8px}
+.nb{background:rgba(0,20,0,.88);border:1px solid rgba(0,255,65,.22);color:var(--g);font-family:'Orbitron',sans-serif;font-size:clamp(15px,4.5vw,21px);font-weight:700;padding:clamp(11px,3.5vw,16px) 0;cursor:pointer;transition:all .12s;letter-spacing:1px;text-shadow:0 0 8px rgba(0,255,65,.5);user-select:none;-webkit-user-select:none;position:relative;overflow:hidden}
+.nb:active{background:rgba(0,255,65,.18);border-color:var(--g);box-shadow:0 0 14px rgba(0,255,65,.4),inset 0 0 10px rgba(0,255,65,.1);transform:scale(.95)}
+.nb.del{color:#ff8888;font-size:clamp(11px,3.2vw,14px);border-color:rgba(255,34,68,.22);letter-spacing:0}
+.nb.del:active{background:rgba(255,34,68,.15);border-color:var(--r)}
+.nb.cfm{background:rgba(0,38,0,.9);border-color:var(--gd);font-size:clamp(10px,2.8vw,13px);letter-spacing:2px}
+.nb.cfm:active{background:rgba(0,255,65,.2);border-color:var(--g)}
+.nb::after{content:'';position:absolute;width:56px;height:56px;background:rgba(0,255,65,.2);border-radius:50%;transform:scale(0);top:50%;left:50%;margin:-28px 0 0 -28px;pointer-events:none}
+.nb.rpl::after{animation:rp .3s ease-out forwards}
+@keyframes rp{to{transform:scale(4);opacity:0}}
+.atmwrap{display:flex;gap:6px;justify-content:center;margin-bottom:7px}
+.atm{width:8px;height:8px;border:1px solid var(--gd);border-radius:50%;transition:background .3s}
+.atm.used{background:var(--r);border-color:var(--r)}
+.smsg{font-size:clamp(10px,2.8vw,11px);letter-spacing:1px;min-height:15px;text-align:center}
+.smsg.ok{color:var(--c);text-shadow:0 0 8px var(--c)}
+.smsg.err{color:var(--r);text-shadow:0 0 8px var(--r)}
+
+/* treasure */
+#s-treasure .panel{text-align:center;border-color:var(--y);box-shadow:0 0 30px rgba(255,215,0,.28),0 0 80px rgba(255,215,0,.1),inset 0 0 40px rgba(255,215,0,.05)}
+#s-treasure .panel::before{background:linear-gradient(90deg,transparent,var(--y),transparent)}
+#s-treasure .panel::after,#s-treasure .ctl{border-color:var(--y)}
+.ticon{font-size:clamp(44px,12vw,64px);display:block;margin:0 auto 10px;animation:float 3s ease-in-out infinite;filter:drop-shadow(0 0 16px var(--y))}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.ttl-g{font-family:'Orbitron',sans-serif;font-size:clamp(18px,5vw,24px);font-weight:900;letter-spacing:3px;color:var(--y);text-shadow:0 0 20px var(--y),0 0 40px rgba(255,215,0,.5);margin-bottom:6px}
+.tsub{font-size:clamp(8px,2vw,10px);color:#aa8800;letter-spacing:2px;margin-bottom:14px}
+.scbox{background:rgba(30,20,0,.9);border:1px solid var(--y);padding:14px;margin:12px 0;position:relative}
+.scbox::before{content:'SECRET CODE';position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#000a00;padding:0 8px;font-size:9px;letter-spacing:3px;color:var(--y)}
+.scval{font-family:'Orbitron',sans-serif;font-size:clamp(28px,9vw,40px);font-weight:900;color:var(--y);text-shadow:0 0 20px var(--y);letter-spacing:10px}
+.cgt{font-size:clamp(10px,2.5vw,11px);color:#886600;letter-spacing:2px;line-height:2;margin-top:10px}
+.gparts{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.gp{position:absolute;width:4px;height:4px;background:var(--y);border-radius:50%;animation:rise linear infinite;opacity:0}
+@keyframes rise{0%{transform:translateY(100%) translateX(0);opacity:1}100%{transform:translateY(-30%) translateX(var(--dx));opacity:0}}
+
+/* alarm */
+#alarm-ov{position:fixed;inset:0;z-index:300;pointer-events:none}
+#alarm-ov.active{animation:afl .35s ease-in-out 4}
+@keyframes afl{0%,100%{background:rgba(255,0,0,0)}50%{background:rgba(255,0,0,.14)}}
+</style>
+</head>
+<body>
+<canvas id="mc"></canvas>
+<div id="alarm-ov"></div>
+
+<!-- ══ S0: DOOR ══ -->
+<div class="stage" id="s-door">
+  <div class="panel">
+    <div class="ctl"></div>
+    <div class="stag">// SECTOR-7 · MAIN ENTRANCE //</div>
+    <div class="ttl">門禁控制系統</div>
+    <div class="sub">DOOR ACCESS CONTROL — LEVEL 0</div>
+    <div class="pbw"><div class="pbf" id="pb0" style="width:0%"></div><div class="pbl" id="pbl0">0%</div></div>
+    <div class="tkr" id="tkr0"><span class="bl">▌</span>&nbsp;等待授權輸入…</div>
+    <div class="doorwrap">
+      <svg id="door-svg" width="88" height="106" viewBox="0 0 88 106" style="flex-shrink:0">
+        <rect x="2" y="2" width="84" height="102" fill="none" stroke="#00aa2a" stroke-width="1.5"/>
+        <g class="dp-l" style="transform-origin:4px 53px">
+          <rect x="4" y="4" width="40" height="98" fill="rgba(0,16,0,.95)" stroke="#00ff41" stroke-width="1"/>
+          <rect x="8" y="12" width="32" height="36" fill="none" stroke="#00aa2a" stroke-width=".7" rx="1"/>
+          <rect x="8" y="52" width="32" height="36" fill="none" stroke="#00aa2a" stroke-width=".7" rx="1"/>
+        </g>
+        <g class="dp-r" style="transform-origin:84px 53px">
+          <rect x="44" y="4" width="40" height="98" fill="rgba(0,16,0,.95)" stroke="#00ff41" stroke-width="1"/>
+          <rect x="48" y="12" width="32" height="36" fill="none" stroke="#00aa2a" stroke-width=".7" rx="1"/>
+          <rect x="48" y="52" width="32" height="36" fill="none" stroke="#00aa2a" stroke-width=".7" rx="1"/>
+        </g>
+        <circle id="lk-c" cx="44" cy="56" r="7" fill="none" stroke="#00ff41" stroke-width="1.5"/>
+        <circle id="lk-d" cx="44" cy="56" r="3" fill="#00ff41"/>
+        <circle id="wl" cx="44" cy="10" r="4" fill="#ff2244"><animate attributeName="opacity" values="1;0.3;1" dur="1s" repeatCount="indefinite"/></circle>
+      </svg>
+      <div class="doorinfo">
+        <span>狀態：<span class="v" id="ds0">🔴 鎖定</span></span>
+        <span>等級：<span class="v">LEVEL-0</span></span>
+        <span>位置：<span class="v">主入口</span></span>
+        <span>警報：<span class="v" id="alm0">啟動中</span></span>
+      </div>
+    </div>
+    <div class="inlbl">// 輸入門禁密碼</div>
+    <div class="coddis" id="dis0"></div>
+    <div class="numpad" id="np0"></div>
+    <div class="atmwrap" id="atm0"></div>
+    <div class="smsg" id="msg0"></div>
+  </div>
+</div>
+
+<!-- ══ S1: LASER ══ -->
+<div class="stage hidden" id="s-laser">
+  <div class="panel">
+    <div class="ctl"></div>
+    <div class="stag">// SECTOR-7 · LASER GRID //</div>
+    <div class="ttl">雷射防護層</div>
+    <div class="sub">PHYSICAL LASER ACTIVE — ENTER DISABLE CODE</div>
+    <div class="pbw"><div class="pbf" id="pb1" style="width:16%"></div><div class="pbl" id="pbl1">16%</div></div>
+    <div class="tkr" id="tkr1"><span class="bl">▌</span>&nbsp;偵測到雷射格柵 — 需要禁用密碼</div>
+    <div class="laserwrap">
+      <div class="ll"></div><div class="ll"></div><div class="ll"></div>
+      <div class="llbl" id="laser-lbl">⚠ LASER ACTIVE ⚠</div>
+    </div>
+    <div style="font-size:10px;color:var(--gd);letter-spacing:1px;margin-bottom:12px;padding:8px;border:1px solid rgba(255,34,68,.2);line-height:1.8">
+      <span style="color:var(--r)">⚠</span>&nbsp;現實雷射正在運作中<br>
+      輸入禁用密碼以關閉雷射格柵
+    </div>
+    <div class="inlbl">// 輸入雷射禁用密碼</div>
+    <div class="coddis" id="dis1"></div>
+    <div class="numpad" id="np1"></div>
+    <div class="atmwrap" id="atm1"></div>
+    <div class="smsg" id="msg1"></div>
+  </div>
+</div>
+
+<!-- ══ S2: SYMBOL ══ -->
+<div class="stage hidden" id="s-symbol">
+  <div class="panel">
+    <div class="ctl"></div>
+    <div class="stag">// SECTOR-7 · DECRYPTION //</div>
+    <div class="ttl">符號密碼本</div>
+    <div class="sub">SYMBOL DECRYPTION — LEVEL 2</div>
+    <div class="pbw"><div class="pbf" id="pb2" style="width:32%"></div><div class="pbl" id="pbl2">32%</div></div>
+    <div class="tkr" id="tkr2"><span class="bl">▌</span>&nbsp;加密序列偵測 — 對照手冊解碼</div>
+    <div class="sym-seq-box">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--gd);margin-bottom:10px">// 當前加密序列</div>
+      <div class="sym-seq" id="sym-seq"></div>
+      <div class="sym-note">對照信封內的機密手冊翻譯為數字</div>
+    </div>
+    <div class="inlbl">// 輸入解碼後的數字</div>
+    <div class="coddis" id="dis2"></div>
+    <div class="numpad" id="np2"></div>
+    <div class="atmwrap" id="atm2"></div>
+    <div class="smsg" id="msg2"></div>
+  </div>
+</div>
+
+<!-- ══ S3: MORSE ══ -->
+<div class="stage hidden" id="s-morse">
+  <div class="panel">
+    <div class="ctl"></div>
+    <div class="stag">// SECTOR-7 · SIGNALS //</div>
+    <div class="ttl">摩斯電碼訊號</div>
+    <div class="sub">MORSE SIGNAL DECODE — LEVEL 3</div>
+    <div class="pbw"><div class="pbf" id="pb3" style="width:48%"></div><div class="pbl" id="pbl3">48%</div></div>
+    <div class="tkr" id="tkr3"><span class="bl">▌</span>&nbsp;攔截到加密訊號 — 對照摩斯表解碼</div>
+    <div class="morse-box">
+      <div style="font-size:9px;letter-spacing:2px;color:var(--gd);margin-bottom:8px">// 訊號接收器</div>
+      <div class="bulbs" id="bulbs"></div>
+      <div class="mstat" id="mstat">按「播放訊號」開始接收</div>
+      <div class="mctrl">
+        <button class="mcbtn" id="mbtn-play" onclick="playMorse()">▶ 播放訊號</button>
+        <button class="mcbtn" id="mbtn-stop" onclick="stopMorse()" disabled>■ 停止</button>
+        <button class="mcbtn" id="mbtn-replay" onclick="replayMorse()" style="display:none">↺ 重播</button>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--gd);letter-spacing:1px;margin-bottom:12px;padding:8px;border:1px solid rgba(0,255,65,.15);line-height:1.8">
+      對照牆上的摩斯電碼表翻譯燈號<br>
+      <span style="color:var(--g)">長亮 = — &nbsp;&nbsp; 短閃 = ·</span>
+    </div>
+    <div class="inlbl">// 輸入翻譯後的密碼</div>
+    <div class="coddis" id="dis3"></div>
+    <div class="numpad" id="np3"></div>
+    <div class="atmwrap" id="atm3"></div>
+    <div class="smsg" id="msg3"></div>
+  </div>
+</div>
+
+<!-- ══ S4: QR ══ -->
+<div class="stage hidden" id="s-qr">
+  <div class="panel">
+    <div class="ctl"></div>
+    <div class="stag">// SECTOR-7 · SCAN OPS //</div>
+    <div class="ttl">QR 碎片掃描</div>
+    <div class="sub">FRAGMENT SCAN — LEVEL 4</div>
+    <div class="pbw"><div class="pbf" id="pb4" style="width:64%"></div><div class="pbl" id="pbl4">64%</div></div>
+    <div class="tkr" id="tkr4"><span class="bl">▌</span>&nbsp;找到並拼合 4 塊 QR 碎片後進行掃描</div>
+    <div class="qr-box">
+      <div style="font-size:9px;letter-spacing:2px;color:var(--gd);margin-bottom:8px">// 掃描器</div>
+      <div class="qr-video-wrap" id="qr-video-wrap">
+        <video id="qr-video" autoplay muted playsinline></video>
+        <div class="qr-overlay">
+          <div class="qr-frame">
+            <div class="qr-corner-bl"></div><div class="qr-corner-br"></div>
+            <div class="qr-scan-line" id="qr-scan-line"></div>
+          </div>
+        </div>
+      </div>
+      <div class="qr-result-box" id="qr-result">等待掃描…</div>
+      <button class="qr-btn" id="qr-cam-btn" onclick="startQRScan()">▶ 開啟相機掃描</button>
+      <button class="qr-btn" id="qr-confirm-btn" onclick="confirmQR()" disabled style="margin-top:6px;border-color:var(--gd)">✓ 確認 QR Code 正確，進入下一關</button>
+    </div>
+    <div class="smsg" id="msg4"></div>
+  </div>
+</div>
+
+<!-- ══ S5: STAR ══ -->
+<div class="stage hidden" id="s-star">
+  <div class="panel">
+    <div class="ctl"></div>
+    <div class="stag">// SECTOR-7 · STAR MAP //</div>
+    <div class="ttl">星圖對位</div>
+    <div class="sub">STAR MAP DIFFERENTIAL — LEVEL 5</div>
+    <div class="pbw"><div class="pbf" id="pb5" style="width:80%"></div><div class="pbl" id="pbl5">80%</div></div>
+    <div class="tkr" id="tkr5"><span class="bl">▌</span>&nbsp;比對星圖差異 — 對照牆上完整版</div>
+    <div class="star-single">
+      <div class="star-title">// 程式版星圖（不完整）</div>
+      <svg class="star-svg" viewBox="0 0 160 160" id="star-svg"></svg>
+      <div class="star-cnt" id="star-cnt"></div>
+    </div>
+    <div style="font-size:10px;color:var(--gd);letter-spacing:1px;margin-bottom:12px;padding:8px;border:1px solid rgba(0,255,65,.15);line-height:1.9">
+      對照牆上貼的完整星圖<br>
+      分 4 個象限，各數出牆上比程式多幾顆<br>
+      <span style="color:var(--g)">密碼 = 四象限差值依序排列</span>
+    </div>
+    <div class="inlbl">// 輸入星圖差異密碼</div>
+    <div class="coddis" id="dis5"></div>
+    <div class="numpad" id="np5"></div>
+    <div class="atmwrap" id="atm5"></div>
+    <div class="smsg" id="msg5"></div>
+  </div>
+</div>
+
+<!-- ══ S6: BOSS ══ -->
+<div class="stage hidden" id="s-boss">
+  <div class="panel">
+    <div class="ctl"></div>
+    <div class="stag">// SECTOR-7 · FINAL LOCK //</div>
+    <div class="ttl">最終解鎖</div>
+    <div class="sub">BOSS STAGE — FINAL CODE REQUIRED</div>
+    <div class="pbw"><div class="pbf" id="pb6" style="width:96%"></div><div class="pbl" id="pbl6">96%</div></div>
+    <div class="tkr" id="tkr6"><span class="bl">▌</span>&nbsp;最終防護層 — 輸入終極密碼</div>
+    <div class="boss-hint">
+      <div style="font-size:9px;letter-spacing:3px;color:#886600;margin-bottom:8px">// 線索</div>
+      <div class="bh-row">每一關解鎖成功的瞬間</div>
+      <div class="bh-row">畫面某處曾短暫出現過數字</div>
+      <div class="bh-row">共 <span>6 個數字</span>，依關卡順序排列</div>
+      <div class="bh-row" style="margin-top:6px;color:#555">你們記下來了嗎…？</div>
+    </div>
+    <div class="inlbl">// 輸入 6 位最終密碼</div>
+    <div class="coddis" id="dis6"></div>
+    <div class="numpad" id="np6"></div>
+    <div class="atmwrap" id="atm6"></div>
+    <div class="smsg" id="msg6"></div>
+  </div>
+</div>
+
+<!-- ══ TREASURE ══ -->
+<div class="stage hidden" id="s-treasure">
+  <div class="panel">
+    <div class="ctl"></div>
+    <div class="gparts" id="gparts"></div>
+    <div class="stag" style="color:#886600;text-align:center">// MISSION COMPLETE //</div>
+    <span class="ticon">🏆</span>
+    <div class="ttl-g">任務完成！</div>
+    <div class="tsub">ALL SECTORS BREACHED — MISSION ACCOMPLISHED</div>
+    <div class="scbox"><div class="scval">2597</div></div>
+    <div class="cgt">
+      全六關突破 ✓<br>
+      門禁 · 雷射 · 符號 · 摩斯 · QR · 星圖 · Boss<br><br>
+      <span style="color:#ffcc00;letter-spacing:4px;font-family:'Orbitron',sans-serif;font-size:clamp(11px,3vw,14px)">SECTOR-7 BREACHED</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────
+// MATRIX RAIN
+// ──────────────────────────────────────────
+(()=>{
+  const cv=document.getElementById('mc'),ctx=cv.getContext('2d');
+  const ch='アイウエオカキクケコサシスセソタチツテトABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*<>[]{}|/\\';
+  let cols,drops;
+  const rsz=()=>{cv.width=innerWidth;cv.height=innerHeight;cols=Math.floor(cv.width/18);drops=Array.from({length:cols},()=>(Math.random()*-60)|0)};
+  rsz();addEventListener('resize',rsz);
+  setInterval(()=>{
+    ctx.fillStyle='rgba(0,10,0,0.045)';ctx.fillRect(0,0,cv.width,cv.height);
+    for(let i=0;i<cols;i++){
+      const b=Math.random()>.96;
+      ctx.fillStyle=b?'#fff':(Math.random()>.5?'#00ff41':'#007a20');
+      ctx.font=(b?'bold ':'')+' 14px Share Tech Mono';
+      ctx.fillText(ch[Math.random()*ch.length|0],i*18,drops[i]*18);
+      if(drops[i]*18>cv.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    }
+  },45);
+})();
+
+// ──────────────────────────────────────────
+// CONFIG — 在這裡修改所有密碼
+// ──────────────────────────────────────────
+const CODES={
+  0:'1234',   // 關卡0 門禁
+  1:'5678',   // 關卡1 雷射禁用
+  2:'2312',   // 關卡2 符號解碼 (◆=2,✦=3,▲=1,◆=2)
+  3:'2597',   // 關卡3 摩斯電碼 (2=..--- 5=..... 9=----. 7=--..)
+  5:'1021',   // 關卡5 星圖差異 (Q1差1,Q2差0,Q3差2,Q4差1)
+  6:'927815', // 關卡6 Boss最終 (各關隱藏數字依序)
+};
+const CLEN={0:4,1:4,2:4,3:4,5:4,6:6};
+
+// 各關成功閃現的隱藏數字 (組成 Boss 密碼 927815)
+// 關0=9, 關1=2, 關2=7, 關3=8, 關4=1, 關5=5
+const HIDDEN={0:'9',1:'2',2:'7',3:'8',4:'1',5:'5'};
+
+// 符號序列顯示 (對應密碼 2312)
+const SYM_SEQ=['◆','✦','▲','◆'];
+
+// 摩斯電碼序列 (對應密碼 2597)
+// true=長(—) false=短(·)
+// 2=..--- 5=..... 9=----. 7=--..)
+const MORSE=[
+  [false,false,true,true,true],   // 2
+  [false,false,false,false,false],// 5
+  [true,true,true,true,false],    // 9
+  [true,true,false,false,false],  // 7
+];
+
+// 程式版星圖 (只顯示這個，不顯示牆上版)
+const STAR_PROG=[
+  {x:32,y:28},{x:52,y:20},{x:68,y:36},            // Q1 3顆 (牆上4顆，差1)
+  {x:95,y:22},{x:108,y:38},{x:128,y:28},{x:118,y:48}, // Q2 4顆 (牆上4顆，差0)
+  {x:25,y:90},{x:45,y:82},{x:58,y:100},            // Q3 3顆 (牆上5顆，差2)
+  {x:95,y:85},{x:110,y:98},{x:130,y:78},           // Q4 3顆 (牆上4顆，差1)
+];
+
+// ──────────────────────────────────────────
+// UTILS
+// ──────────────────────────────────────────
+let curStage=0;
+
+function typeText(id,text){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.innerHTML='<span class="bl">▌</span>&nbsp;';
+  let i=0;
+  const iv=setInterval(()=>{
+    if(i<text.length)el.innerHTML='<span class="bl">▌</span>&nbsp;'+text.slice(0,++i);
+    else clearInterval(iv);
+  },28);
+}
+
+function animPB(pbId,lblId,target){
+  const el=document.getElementById(pbId),lb=document.getElementById(lblId);
+  let c=parseInt(el.style.width)||0;
+  const iv=setInterval(()=>{c=Math.min(c+1,target);el.style.width=c+'%';if(lb)lb.textContent=c+'%';if(c>=target)clearInterval(iv);},12);
+}
+
+function triggerAlarm(){
+  const o=document.getElementById('alarm-ov');
+  o.classList.remove('active');void o.offsetWidth;o.classList.add('active');
+  setTimeout(()=>o.classList.remove('active'),1600);
+}
+
+function showHiddenDigit(stageIdx){
+  const d=HIDDEN[stageIdx];
+  if(!d)return;
+  // flash in corner as a brief translucent overlay text
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;top:12px;right:16px;font-family:Orbitron,sans-serif;font-size:11px;color:rgba(0,255,65,.25);z-index:150;pointer-events:none;letter-spacing:2px;transition:opacity .4s';
+  div.textContent='['+stageIdx+']: '+d;
+  document.body.appendChild(div);
+  setTimeout(()=>{div.style.opacity='0';setTimeout(()=>div.remove(),500);},3500);
+}
+
+function goStage(n){
+  document.querySelectorAll('.stage').forEach(s=>s.classList.add('hidden'));
+  const ids=['s-door','s-laser','s-symbol','s-morse','s-qr','s-star','s-boss','s-treasure'];
+  const el=document.getElementById(ids[n]);
+  if(el)el.classList.remove('hidden');
+  curStage=n;
+}
+
+// ──────────────────────────────────────────
+// NUMPAD ENGINE
+// ──────────────────────────────────────────
+function buildNumpad(dispId,npId,key,stageNum,onSuccess){
+  const len=CLEN[key]||4;
+  const disp=document.getElementById(dispId);
+  const npEl=document.getElementById(npId);
+  let entered=[],attempts=0,locked=false;
+
+  // display cells
+  disp.innerHTML='';
+  for(let i=0;i<len;i++){
+    const c=document.createElement('div');
+    c.className='cd'+(i===0?' active':'');
+    disp.appendChild(c);
+  }
+
+  // attempt dots
+  const atmEl=document.getElementById('atm'+key);
+  if(atmEl){
+    atmEl.innerHTML='';
+    for(let i=0;i<3;i++){const a=document.createElement('div');a.className='atm';atmEl.appendChild(a);}
+  }
+
+  function updDisp(){
+    disp.querySelectorAll('.cd').forEach((c,i)=>{
+      c.classList.remove('active','filled');c.innerHTML='';
+      if(i<entered.length){c.classList.add('filled');const d=document.createElement('div');d.className='cdot';c.appendChild(d);}
+      if(i===entered.length)c.classList.add('active');
+    });
+  }
+
+  function setErr(){
+    disp.querySelectorAll('.cd').forEach(c=>{c.classList.remove('active','filled');c.classList.add('err')});
+    locked=true;
+    setTimeout(()=>{disp.querySelectorAll('.cd').forEach(c=>c.classList.remove('err'));entered=[];updDisp();locked=false;},650);
+  }
+
+  function setOk(){
+    disp.querySelectorAll('.cd').forEach(c=>{c.classList.remove('active','filled','err');c.classList.add('ok')});
+  }
+
+  function confirm(){
+    if(locked||!entered.length)return;
+    const val=entered.join('');
+    const msg=document.getElementById('msg'+key);
+    if(val===CODES[key]){
+      setOk();
+      if(msg){msg.className='smsg ok';msg.textContent='✓ 密碼正確 — 解鎖中…';}
+      disableNp(true);
+      onSuccess();
+    } else {
+      attempts++;
+      if(atmEl)atmEl.querySelectorAll('.atm')[attempts-1]?.classList.add('used');
+      setErr();triggerAlarm();
+      if(msg)msg.className='smsg err';
+      if(attempts>=3){
+        if(msg)msg.textContent='⛔ 超過嘗試次數 — 暫時鎖定！';
+        typeText('tkr'+key,'安全違規 — 暫時鎖定中…');
+        disableNp(true);
+        setTimeout(()=>{
+          disableNp(false);attempts=0;
+          if(atmEl)atmEl.querySelectorAll('.atm').forEach(a=>a.classList.remove('used'));
+          if(msg)msg.textContent='';
+          typeText('tkr'+key,'系統重置完成…');
+        },5000);
+      } else {
+        if(msg)msg.textContent='✗ 密碼錯誤 — 剩餘 '+(3-attempts)+' 次機會';
+        typeText('tkr'+key,'錯誤密碼 — 重新輸入…');
+      }
+    }
+  }
+
+  function disableNp(v){npEl.querySelectorAll('.nb').forEach(b=>b.disabled=v);}
+
+  function rpl(b){b.classList.remove('rpl');void b.offsetWidth;b.classList.add('rpl');setTimeout(()=>b.classList.remove('rpl'),350);}
+
+  // build keys
+  npEl.innerHTML='';
+  [1,2,3,4,5,6,7,8,9,'del',0,'cfm'].forEach(k=>{
+    const b=document.createElement('button');
+    b.className='nb'+(k==='del'?' del':k==='cfm'?' cfm':'');
+    b.textContent=k==='del'?'⌫ 刪除':k==='cfm'?'確認 ↵':k;
+    b.onclick=()=>{
+      rpl(b);if(locked)return;
+      const msg=document.getElementById('msg'+key);
+      if(typeof k==='number'){
+        if(entered.length<len){entered.push(String(k));if(msg)msg.textContent='';updDisp();if(entered.length===len)setTimeout(confirm,120);}
+      } else if(k==='del'){
+        if(entered.length>0){entered.pop();if(msg)msg.textContent='';updDisp();}
+      } else confirm();
+    };
+    npEl.appendChild(b);
+  });
+
+  // physical keyboard
+  document.addEventListener('keydown',e=>{
+    if(curStage!==stageNum||locked)return;
+    if(e.key>='0'&&e.key<='9'&&entered.length<len){
+      entered.push(e.key);document.getElementById('msg'+key).textContent='';updDisp();
+      if(entered.length===len)setTimeout(confirm,120);
+    } else if(e.key==='Backspace'){if(entered.length>0){entered.pop();updDisp();}}
+    else if(e.key==='Enter')confirm();
+  });
+
+  updDisp();
+}
+
+// ──────────────────────────────────────────
+// WEB AUDIO MORSE BEEP
+// ──────────────────────────────────────────
+let audioCtx=null;
+function getAudio(){
+  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function beep(startSec,durSec,freq=700){
+  const ac=getAudio();
+  const osc=ac.createOscillator(),gain=ac.createGain();
+  osc.connect(gain);gain.connect(ac.destination);
+  osc.frequency.value=freq;osc.type='sine';
+  gain.gain.setValueAtTime(0,startSec);
+  gain.gain.linearRampToValueAtTime(0.35,startSec+0.01);
+  gain.gain.setValueAtTime(0.35,startSec+durSec-0.01);
+  gain.gain.linearRampToValueAtTime(0,startSec+durSec);
+  osc.start(startSec);osc.stop(startSec+durSec);
+}
+
+let morseTimers=[];
+let morsePlaying=false;
+
+function stopMorse(){
+  morseTimers.forEach(t=>clearTimeout(t));morseTimers=[];morsePlaying=false;
+  document.querySelectorAll('.bulb').forEach(b=>b.classList.remove('on'));
+  document.getElementById('mbtn-play').disabled=false;
+  document.getElementById('mbtn-stop').disabled=true;
+  document.getElementById('mstat').textContent='已停止 — 按播放重新開始';
+}
+
+window.replayMorse=function(){
+  stopMorse();
+  setTimeout(playMorse,200);
+};
+
+window.playMorse=function(){
+  if(morsePlaying)return;
+  morsePlaying=true;
+  document.getElementById('mbtn-play').disabled=true;
+  document.getElementById('mbtn-stop').disabled=false;
+  document.getElementById('mbtn-replay').style.display='none';
+
+  // resume AudioContext if suspended (iOS)
+  const ac=getAudio();
+  if(ac.state==='suspended')ac.resume();
+
+  const DOT=280,DASH=840,SIG_GAP=280,DIG_GAP=700;
+  let t=0; // ms timeline
+  let acT=ac.currentTime+0.1; // audio timeline
+
+  MORSE.forEach((seq,di)=>{
+    seq.forEach((isLong,si)=>{
+      const dur=isLong?DASH:DOT;
+      const id=`mb-${di}-${si}`;
+      // audio beep
+      beep(acT,dur/1000);
+      acT+=dur/1000;
+      // visual ON
+      const onDelay=t;
+      morseTimers.push(setTimeout(()=>{
+        const b=document.getElementById(id);
+        if(b)b.classList.add('on');
+        document.getElementById('mstat').textContent=isLong?'▬ 長訊號':'● 短訊號';
+      },onDelay));
+      t+=dur;
+      // visual OFF
+      const offDelay=t;
+      morseTimers.push(setTimeout(()=>{
+        const b=document.getElementById(id);
+        if(b)b.classList.remove('on');
+      },offDelay));
+      t+=SIG_GAP;
+      acT+=SIG_GAP/1000;
+    });
+    if(di<MORSE.length-1){
+      t+=DIG_GAP-SIG_GAP; // extra gap between digits
+      acT+=(DIG_GAP-SIG_GAP)/1000;
+    }
+  });
+
+  // done
+  morseTimers.push(setTimeout(()=>{
+    morsePlaying=false;
+    document.getElementById('mbtn-stop').disabled=true;
+    document.getElementById('mbtn-replay').style.display='block';
+    document.getElementById('mstat').textContent='播放完畢 — 翻譯後輸入密碼';
+  },t+300));
+};
+
+function buildMorseBulbs(){
+  const container=document.getElementById('bulbs');
+  container.innerHTML='';
+  MORSE.forEach((seq,di)=>{
+    seq.forEach((isLong,si)=>{
+      const b=document.createElement('div');
+      b.className='bulb';b.id=`mb-${di}-${si}`;
+      b.title=isLong?'—':'·';
+      container.appendChild(b);
+    });
+    if(di<MORSE.length-1){
+      const sep=document.createElement('div');sep.className='msep';container.appendChild(sep);
+    }
+  });
+}
+
+// ──────────────────────────────────────────
+// QR SCANNER (jsQR)
+// ──────────────────────────────────────────
+let qrStream=null,qrAnimId=null,qrScanned=null;
+
+window.startQRScan=async function(){
+  const btn=document.getElementById('qr-cam-btn');
+  const resultEl=document.getElementById('qr-result');
+  btn.disabled=true;btn.textContent='開啟相機中…';
+  try{
+    qrStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}
+    });
+    const video=document.getElementById('qr-video');
+    video.srcObject=qrStream;
+    await video.play();
+    btn.textContent='● 掃描中…';
+    resultEl.textContent='對準 QR Code…';
+    typeText('tkr4','相機已啟動 — 對準 QR Code 進行掃描…');
+
+    // load jsQR
+    if(!window.jsQR){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+        s.onload=res;s.onerror=rej;
+        document.head.appendChild(s);
+      });
+    }
+
+    const canvas=document.createElement('canvas');
+    const ctx2=canvas.getContext('2d');
+
+    function scanFrame(){
+      if(!morsePlaying&&video.readyState===video.HAVE_ENOUGH_DATA){
+        canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+        ctx2.drawImage(video,0,0,canvas.width,canvas.height);
+        const imgData=ctx2.getImageData(0,0,canvas.width,canvas.height);
+        const code=window.jsQR(imgData.data,imgData.width,imgData.height,{inversionAttempts:'dontInvert'});
+        if(code){
+          qrScanned=code.data;
+          resultEl.className='qr-result-box got';
+          resultEl.textContent='✓ 掃描成功：'+code.data;
+          document.getElementById('qr-scan-line').style.animation='none';
+          document.getElementById('qr-scan-line').style.background='linear-gradient(90deg,transparent,#00ff41,transparent)';
+          document.getElementById('qr-scan-line').style.boxShadow='0 0 8px #00ff41';
+          document.getElementById('qr-confirm-btn').disabled=false;
+          const msg=document.getElementById('msg4');
+          msg.className='smsg ok';msg.textContent='✓ QR Code 讀取成功 — 請確認後進入下一關';
+          typeText('tkr4','QR Code 讀取成功 — 請確認…');
+          stopQRScan();
+          return;
+        }
+      }
+      qrAnimId=requestAnimationFrame(scanFrame);
+    }
+    qrAnimId=requestAnimationFrame(scanFrame);
+  } catch(e){
+    btn.disabled=false;
+    btn.textContent='▶ 開啟相機掃描';
+    resultEl.textContent='⚠ 無法開啟相機：'+e.message;
+    const msg=document.getElementById('msg4');
+    msg.className='smsg err';msg.textContent='相機權限被拒絕，請允許存取相機';
+  }
+};
+
+function stopQRScan(){
+  if(qrAnimId){cancelAnimationFrame(qrAnimId);qrAnimId=null;}
+  if(qrStream){qrStream.getTracks().forEach(t=>t.stop());qrStream=null;}
+}
+
+window.confirmQR=function(){
+  if(!qrScanned){
+    const msg=document.getElementById('msg4');
+    msg.className='smsg err';msg.textContent='✗ 尚未掃描到 QR Code';
+    return;
+  }
+  stopQRScan();
+  typeText('tkr4','QR 驗證成功 — 情報解析中…');
+  animPB('pb4','pbl4',80);
+  showHiddenDigit(4);
+  setTimeout(()=>{
+    goStage(5);curStage=5;
+    buildStarMap();
+    buildNumpad('dis5','np5',5,5,()=>{
+      typeText('tkr5','星圖比對成功 — 授權通過…');
+      animPB('pb5','pbl5',96);
+      showHiddenDigit(5);
+      setTimeout(()=>{goStage(6);curStage=6;typeText('tkr6','最終防護層 — 輸入終極密碼…');},2000);
+    });
+    typeText('tkr5','星圖差異分析 — 對照牆上完整版…');
+  },2000);
+};
+
+// ──────────────────────────────────────────
+// STAR MAP (program version only)
+// ──────────────────────────────────────────
+function buildStarMap(){
+  const svg=document.getElementById('star-svg');
+  // quadrant lines
+  let html='<line x1="80" y1="0" x2="80" y2="160" stroke="rgba(0,255,65,.12)" stroke-width=".6" stroke-dasharray="3 2"/>';
+  html+='<line x1="0" y1="80" x2="160" y2="80" stroke="rgba(0,255,65,.12)" stroke-width=".6" stroke-dasharray="3 2"/>';
+  // quadrant labels
+  html+='<text x="40" y="12" text-anchor="middle" font-size="8" fill="rgba(0,255,65,.3)" font-family="Share Tech Mono">Q1</text>';
+  html+='<text x="120" y="12" text-anchor="middle" font-size="8" fill="rgba(0,255,65,.3)" font-family="Share Tech Mono">Q2</text>';
+  html+='<text x="40" y="155" text-anchor="middle" font-size="8" fill="rgba(0,255,65,.3)" font-family="Share Tech Mono">Q3</text>';
+  html+='<text x="120" y="155" text-anchor="middle" font-size="8" fill="rgba(0,255,65,.3)" font-family="Share Tech Mono">Q4</text>';
+  // stars
+  STAR_PROG.forEach(s=>{
+    html+=`<circle cx="${s.x}" cy="${s.y}" r="2.8" fill="#00ff41" opacity=".9"/>`;
+    html+=`<circle cx="${s.x}" cy="${s.y}" r="6" fill="none" stroke="#00ff41" stroke-width=".5" opacity=".25"/>`;
+  });
+  svg.innerHTML=html;
+  document.getElementById('star-cnt').textContent='程式版共 '+STAR_PROG.length+' 顆星 — 對照牆上版數差異';
+}
+
+// ──────────────────────────────────────────
+// SYMBOL SEQUENCE
+// ──────────────────────────────────────────
+function buildSymbolSeq(){
+  const el=document.getElementById('sym-seq');
+  el.innerHTML='';
+  SYM_SEQ.forEach(s=>{
+    const sp=document.createElement('span');sp.className='sym-char';sp.textContent=s;
+    el.appendChild(sp);
+  });
+}
+
+// ──────────────────────────────────────────
+// STAGE WIRING
+// ──────────────────────────────────────────
+
+// Stage 0 — Door
+buildNumpad('dis0','np0',0,0,()=>{
+  typeText('tkr0','授權確認 — 開啟主入口…');
+  animPB('pb0','pbl0',16);
+  const svg=document.getElementById('door-svg');svg.classList.add('door-open');
+  document.getElementById('lk-c').setAttribute('stroke','#00ffff');
+  document.getElementById('lk-d').setAttribute('fill','#00ffff');
+  const wl=document.getElementById('wl');wl.setAttribute('fill','#00ff41');
+  const anim=wl.querySelector('animate');if(anim)anim.remove();
+  document.getElementById('ds0').textContent='🟢 解鎖';
+  document.getElementById('alm0').textContent='已停止';
+  showHiddenDigit(0);
+  setTimeout(()=>{goStage(1);curStage=1;typeText('tkr1','雷射格柵偵測 — 輸入禁用密碼…');},2000);
+});
+
+// Stage 1 — Laser
+buildNumpad('dis1','np1',1,1,()=>{
+  typeText('tkr1','禁用序列啟動 — 關閉雷射格柵…');
+  animPB('pb1','pbl1',32);
+  document.querySelectorAll('.ll').forEach(l=>{
+    l.style.animation='none';
+    l.style.background='linear-gradient(90deg,transparent,#00ff41,transparent)';
+    l.style.boxShadow='0 0 6px #00ff41';
+  });
+  const lbl=document.getElementById('laser-lbl');
+  lbl.textContent='✓ LASER DISABLED';
+  lbl.style.cssText='color:#00ff41;text-shadow:0 0 10px #00ff41;animation:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:4px;z-index:2';
+  showHiddenDigit(1);
+  setTimeout(()=>{
+    goStage(2);curStage=2;
+    buildSymbolSeq();
+    buildNumpad('dis2','np2',2,2,()=>{
+      typeText('tkr2','解碼成功 — 認證通過…');
+      animPB('pb2','pbl2',48);
+      showHiddenDigit(2);
+      setTimeout(()=>{
+        goStage(3);curStage=3;
+        buildMorseBulbs();
+        buildNumpad('dis3','np3',3,3,()=>{
+          stopMorse();
+          typeText('tkr3','訊號解碼成功 — 認證通過…');
+          animPB('pb3','pbl3',64);
+          showHiddenDigit(3);
+          setTimeout(()=>{goStage(4);curStage=4;typeText('tkr4','找到並拼合 QR 碎片後掃描…');},2000);
+        });
+        typeText('tkr3','攔截到摩斯訊號 — 按播放開始…');
+      },2000);
+    });
+    typeText('tkr2','符號序列偵測 — 對照信封手冊解碼…');
+  },2000);
+});
+
+// Stage 6 — Boss
+buildNumpad('dis6','np6',6,6,()=>{
+  typeText('tkr6','最終密碼驗證 — 解鎖中…');
+  animPB('pb6','pbl6',100);
+  setTimeout(()=>{goStage(7);spawnParticles();},1800);
+});
+
+// ──────────────────────────────────────────
+// GOLD PARTICLES
+// ──────────────────────────────────────────
+function spawnParticles(){
+  const wrap=document.getElementById('gparts');
+  for(let i=0;i<36;i++){
+    const p=document.createElement('div');p.className='gp';
+    p.style.left=(Math.random()*100)+'%';p.style.bottom='0';
+    p.style.setProperty('--dx',((Math.random()-.5)*140)+'px');
+    p.style.animationDuration=(2+Math.random()*3)+'s';
+    p.style.animationDelay=(Math.random()*2)+'s';
+    wrap.appendChild(p);
+  }
+}
+</script>
+</body>
+</html>
